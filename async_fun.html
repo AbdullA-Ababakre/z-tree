@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<HTML>
+
+<HEAD>
+    <TITLE> 文件结构树</TITLE>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <link rel="stylesheet" href="demo.css" type="text/css">
+    <link rel="stylesheet" href="zTreeStyle.css" type="text/css">
+    
+    <script type="text/javascript" src="jquery-1.4.4.min.js"></script>
+    <script type="text/javascript" src="jquery.ztree.core.js"></script>
+
+    <SCRIPT type="text/javascript">
+        var setting = {
+            view: {
+                selectedMulti: false
+            },
+            async: {
+                enable: true,
+                // url: 'http://192.168.101.60:8080/BIM/api/getChild?nodeName=C_DJWGJ&projectName=铜万高速宜丰联络线C5标',
+                url: 'alldata.json',
+                autoParam: ["id=id", "name=name", "pId=parentId"],
+                otherParam: {
+                    "otherParam": "zTreeAsyncTest"
+                },
+                dataFilter: filter
+            },
+            data: {
+                simpleData: {
+                    enable: true,
+                    idKey: "id",
+                    pIdKey: "parentId",
+                    rootPId: 0
+                },
+                key: {
+                    name: "name",
+                    id: "id",
+                    pId: "parentId",
+                    isParent: true
+
+                },
+                keep: {
+                    parent: true
+                },
+            },
+            view: {
+                addDiyDom: addDiyDom,
+                	showLine: false,
+                //  showIcon: false,
+            },
+            callback: {
+                beforeClick: beforeClick,
+                beforeAsync: beforeAsync,
+                onAsyncError: onAsyncError,
+                onAsyncSuccess: onAsyncSuccess
+            }
+        };
+
+        function filter(treeId, parentNode, childNodes) {
+            if (!childNodes) return null;
+            for (var i = 0, l = childNodes.length; i < l; i++) {
+                childNodes[i].name = childNodes[i].name.replace(/\.n/g, '.');
+            }
+            return childNodes;
+        }
+
+        function beforeClick(treeId, treeNode) {
+            if (!treeNode.isParent) {
+                //	alert("Please select one parent node...");
+                console.log(treeNode.level);
+
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+        function addDiyDom(treeId, treeNode) {
+            var spaceWidth = 15;
+            var liObj = $("#" + treeNode.tId);
+            var aObj = $("#" + treeNode.tId + "_a");
+            var switchObj = $("#" + treeNode.tId + "_switch");
+            var icoObj = $("#" + treeNode.tId + "_ico");
+            var spanObj = $("#" + treeNode.tId + "_span");
+            aObj.attr('title', '');
+            aObj.append('<div class="diy swich"></div>');
+            var div = $(liObj).find('div').eq(0);
+            switchObj.remove();
+            spanObj.remove();
+            icoObj.remove();
+            div.append(switchObj);
+            div.append(spanObj);
+            var spaceStr = "<span style='height:1px;display: inline-block;width:" + (spaceWidth * treeNode.level) + "px'></span>";
+            switchObj.before(spaceStr);
+            var editStr = '';
+            editStr += '<div class="diy">' + (treeNode.siGongqu == null ? '&nbsp;' : treeNode.siGongqu) + '</div>'; //构建编码
+            editStr += '<div class="diy">' + (treeNode.siAdates == null ? '&nbsp;' : treeNode.siAdates) + '</div>'; //预计开始时间
+            editStr += '<div class="diy">' + (treeNode.siAdatee == null ? '&nbsp;' : treeNode.siAdatee) + '</div>'; //预计结束时间
+            editStr += '<div class="diy">' + (treeNode.siPdates == null ? '&nbsp;' : treeNode.siPdates) + '</div>'; //实际开始时间
+            editStr += '<div class="diy">' + (treeNode.siPdatee == null ? '&nbsp;' : treeNode.siPdatee) + '</div>'; //实际结束时间
+            //editStr += '<div class="diy">' + formatHandle(treeNode) + '</div>';
+            aObj.append(editStr);
+            console.log(treeNode.siGongqu);
+
+        }
+        var log, className = "dark";
+
+        function beforeAsync(treeId, treeNode) {
+            className = (className === "dark" ? "" : "dark");
+            showLog("[ " + getTime() + " beforeAsync ]&nbsp;&nbsp;&nbsp;&nbsp;" + ((!!treeNode && !!treeNode.name) ? treeNode.name : "root"));
+            return true;
+        }
+
+        function onAsyncError(event, treeId, treeNode, XMLHttpRequest, textStatus, errorThrown) {
+            showLog("[ " + getTime() + " onAsyncError ]&nbsp;&nbsp;&nbsp;&nbsp;" + ((!!treeNode && !!treeNode.name) ? treeNode.name : "root"));
+        }
+
+        function onAsyncSuccess(event, treeId, treeNode, msg) {
+            showLog("[ " + getTime() + " onAsyncSuccess ]&nbsp;&nbsp;&nbsp;&nbsp;" + ((!!treeNode && !!treeNode) ? treeNode.name : "root"));
+            alert(msg)
+        }
+
+        function showLog(str) {
+            if (!log) log = $("#log");
+            log.append("<li class='" + className + "'>" + str + "</li>");
+            if (log.children("li").length > 8) {
+                log.get(0).removeChild(log.children("li")[0]);
+            }
+        }
+
+        function getTime() {
+            var now = new Date(),
+                h = now.getHours(),
+                m = now.getMinutes(),
+                s = now.getSeconds(),
+                ms = now.getMilliseconds();
+            return (h + ":" + m + ":" + s + " " + ms);
+        }
+
+        function refreshNode(e) {
+            var zTree = $.fn.zTree.getZTreeObj("treeDemo"),
+                type = e.data.type,
+                silent = e.data.silent,
+                nodes = zTree.getSelectedNodes();
+            if (nodes.length == 0) {
+                alert("Please select one parent node at first...");
+            }
+            for (var i = 0, l = nodes.length; i < l; i++) {
+                zTree.reAsyncChildNodes(nodes[i], type, silent);
+                if (!silent) zTree.selectNode(nodes[i]);
+            }
+        }
+
+        $(document).ready(function() {
+            $(function() {
+                var params = {};
+                params.nodeName = "C_DJWGJ";
+                params.projectName = "铜万高速宜丰联络线C5标";
+                var treeNodes;
+                $.ajax({
+                    async: true,
+                    //cache: false,
+                    type: 'get',
+                    contentType: "application/json",
+                    // url: 'http://192.168.101.60:8080/BIM/api/getChild?nodeName=' + params.nodeName + '&projectName=' + params.projectName + '',//请求的action路径  
+                    url: 'alldata.json',
+                    error: function() { //请求失败处理函数  
+                        alert('请求失败');
+                    },
+                    success: function(data) { //请求成功后处理函数。   
+                        treeNodes = data.message;
+                        console.log(treeNodes)
+                        $.fn.zTree.init($("#treeDemo"), setting, treeNodes);
+                        $("#refreshNode").bind("click", {
+                            type: "refresh",
+                            silent: false
+                        }, refreshNode);
+
+                        for (let index = 0; index < treeNodes.length; index++) {
+                            if (treeNodes[index].siGongqu != "" && treeNodes[index].siAdatee != "" && treeNodes[index].siAdates != "") {
+                                const element = treeNodes[index].siAdates;
+                                console.log(element);
+                            }
+                        }
+                        console.log(treeNodes[0].name);
+
+                        //添加表头
+                        var li_head = ' <li class="head"><a><div class="diy" style="border-left: 1px solid #eeeeee;">文件名称</div><div class="diy">路桥名称</div><div class="diy">预计开始日期</div>' +
+                            '<div class="diy">预计结束日期</div><div class="diy">实际开始日期</div><div class="diy">实际结束日期</div></a></li>';
+                        var rows = $("#treeDemo").find('li');
+                        if (rows.length > 0) {
+                            rows.eq(0).before(li_head)
+                        } else {
+                            $("#treeDemo").append(li_head);
+                            $("#treeDemo").append('<li ><div style="text-align: center;line-height: 30px;" >无符合条件数据</div></li>')
+                        }
+
+
+                    }
+                });
+
+            });
+
+        });
+    </SCRIPT>
+
+</HEAD>
+
+<body>
+    <h1>Dynamic Tree - zTree methods</h1>
+    <h6>[ File Path: core/async_fun.html ]</h6>
+    <div class="layer">
+        <div id="tableMain">
+            <ul id="treeDemo" style="width: 100%;height: 800px;" class="ztree"></ul>
+        </div>
+    </div>
+</body>
+
+<style>
+    /*ztree表格*/
+    
+    .ztree {
+        padding: 0;
+        /* border: 1px solid #CDD6D5; */
+    }
+    
+    .ztree li a {
+        vertical-align: middle;
+        height: 30px;
+    }
+    
+    .ztree li>a {
+        width: 100%;
+    }
+    
+    .ztree li>a,
+    .ztree li a.curSelectedNode {
+        padding-top: 0px;
+        background: none;
+        height: auto;
+        border: none;
+        cursor: default;
+        opacity: 1;
+    }
+    
+    .ztree li ul {
+        padding-left: 0px
+    }
+    
+    .ztree div.diy span {
+        line-height: 30px;
+        vertical-align: middle;
+    }
+    
+    .ztree div.diy {
+        height: 100%;
+        width: 17%;
+        line-height: 40px;
+        border-bottom: 1px solid black;
+        border-left: 1px solid #eeeeee;
+        text-align: center;
+        display: inline-block;
+        box-sizing: border-box;
+        color: white;
+        font-family: "SimSun";
+        font-size: 16px;
+        overflow: hidden;
+    }
+    
+    .ztree div.diy:first-child {
+        text-align: left;
+        text-indent: 10px;
+        border-top: none;
+        border-left: 1px solid #eeeeee;
+        border-right: 1px solid #eeeeee;
+    }
+    
+    .ztree .head {
+        background: #354548;
+    }
+    
+    .ztree .head div.diy {
+        /* border-top: none; */
+        /* border-right: 1px solid #CDD2D4; */
+        color: #fff;
+        font-family: "Microsoft YaHei";
+        font-size: 14px;
+    }
+    /*end--ztree表格*/
+</style>
+
+</HTML>
